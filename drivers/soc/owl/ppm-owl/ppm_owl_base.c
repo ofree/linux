@@ -114,8 +114,12 @@ int restore_gpu_performance_level(void)
 	1.one core
 	2.loading parameter
 */
+#define HOT_PLUG 0
+
+#if HOT_PLUG
 extern int set_plug_mask(int val);
 extern int set_user_lock(int val);
+#endif
 /* extern ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 					const char *buf, size_t count); */
 
@@ -176,8 +180,11 @@ int lock_cpu(int cpu_nr)
 	for (i = CONFIG_NR_CPUS; i > cpu_nr; i--)
 		mask |= 1<<(i-1);
 
+
+	#if HOT_PLUG
 	set_user_lock(1);
 	set_plug_mask(mask);
+	#endif
 	/* TODO:delay for last hotplug timer finish */
 
 	mask = 0;
@@ -191,8 +198,11 @@ int lock_cpu(int cpu_nr)
 int unlock_cpu(void)
 {
 	pr_debug("%s\n", __func__);
+	#if HOT_PLUG
 	set_plug_mask(0);
 	set_user_lock(0);
+	#endif
+
 
 	return 0;
 }
