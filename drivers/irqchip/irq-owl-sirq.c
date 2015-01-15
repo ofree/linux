@@ -75,6 +75,9 @@ static struct owl_sirq_info s500_sirq_info[OWL_MAX_NR_SIRQS] = {
 	{ .reg = S500_INTC_EXTCTL + 2, .share_reg = true },
 };
 
+/* Some SOC's sirqs share a same ctrl register,
+ * so we need use one spinlock for all sirqs.
+ */
 static DEFINE_SPINLOCK(owl_sirq_lock);
 
 static unsigned int sirq_read_extctl(struct owl_sirq_info *sirq)
@@ -122,7 +125,6 @@ static void owl_sirq_mask(struct irq_data *d)
 
 	extctl = sirq_read_extctl(sirq);
 	extctl &= ~(INTC_EXTCTL_EN);
-	extctl |= INTC_EXTCTL_PENDING;
 	sirq_write_extctl(sirq, extctl);
 
 	spin_unlock_irqrestore(&owl_sirq_lock, flags);
@@ -136,8 +138,8 @@ static void owl_sirq_unmask(struct irq_data *d)
 
 	spin_lock_irqsave(&owl_sirq_lock, flags);
 
+	/* we don't hold the irq pending generated before irq enabled */
 	extctl = sirq_read_extctl(sirq);
-	extctl &= ~(INTC_EXTCTL_PENDING);
 	extctl |= INTC_EXTCTL_EN;
 	sirq_write_extctl(sirq, extctl);
 
@@ -187,12 +189,12 @@ static void owl_sirq_handler(unsigned int irq, struct irq_desc *desc)
 	struct irq_chip *chip = irq_get_chip(irq);
 	unsigned int extctl;
 
-	extctl = sirq_read_extctl(sirq);
-	if (!(extctl & INTC_EXTCTL_PENDING))
-		return;
-
 	chained_irq_enter(chip, desc);
-	generic_handle_irq(sirq->virq);
+
+	extctl = sirq_read_extctl(sirq);
+	if (extctl & INTC_EXTCTL_PENDING)
+		generic_handle_irq(sirq->virq);
+
 	chained_irq_exit(chip, desc);
 }
 
