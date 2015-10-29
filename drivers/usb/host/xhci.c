@@ -205,6 +205,7 @@ int xhci_reset(struct xhci_hcd *xhci)
 		xhci->bus_state[i].resuming_ports = 0;
 	}
 
+
 	return ret;
 }
 
@@ -558,6 +559,8 @@ int xhci_init(struct usb_hcd *hcd)
 		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
 		compliance_mode_recovery_timer_init(xhci);
 	}
+
+	owl_dwc3_usb2phy_param_setup(0);
 
 	return retval;
 }
