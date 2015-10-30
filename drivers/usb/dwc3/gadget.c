@@ -35,6 +35,103 @@
 #include "gadget.h"
 #include "io.h"
 
+#if SUPPORT_NOT_RMMOD_USBDRV
+#include "plug-gadget.c"
+#endif
+
+
+#ifdef USB_CHARGE_DETECT
+#include <linux/kallsyms.h>
+
+typedef void (*FUNC)(int);
+
+#define USB_CONNECT_TO_PC	1
+#define USB_CONNECT_TO_ADAPTOR		2
+
+u32 reset_interrupt_occured =0;
+struct delayed_work dwc3_work;
+FUNC dwc3_set_usb_plugin_type;
+FUNC dwc3_set_usb_plugin_type_monitor;
+/*0:usb used 1: adfu used*/
+static unsigned int adfu_running;
+
+static void set_usb_device_connect_type(int type)
+{
+	if(dwc3_set_usb_plugin_type)
+		dwc3_set_usb_plugin_type(type);
+
+	dwc3_set_usb_plugin_type_monitor =
+				(FUNC )kallsyms_lookup_name("monitor_set_usb_plugin_type");
+	if(dwc3_set_usb_plugin_type_monitor)
+		dwc3_set_usb_plugin_type_monitor(type);
+}
+
+static void set_connect_type_to_pc_mode(void)
+{
+	if(adfu_running)
+		return;
+	
+	reset_interrupt_occured ++;
+	if(reset_interrupt_occured == 1) {
+		printk("%s %d set PC mode!\n", __func__, __LINE__);
+		set_usb_device_connect_type(USB_CONNECT_TO_PC);
+	}
+}
+
+static void dwc3_charging_monitor(struct work_struct *work)
+{
+	if(adfu_running)
+		return;
+	
+	/*0: not occured, connected adaptor. 1: occured , connected pc*/
+	if(!reset_interrupt_occured) {
+		printk("%s %d set adaptor mode!\n", __func__, __LINE__);
+		set_usb_device_connect_type(USB_CONNECT_TO_ADAPTOR);
+	}
+}
+
+static void start_usb_connect_type_detect_work(void)
+{
+	if(!adfu_running)
+		schedule_delayed_work(&dwc3_work, msecs_to_jiffies(10000));
+}
+
+
+static void usb_charge_detect_init(void)
+{
+	reset_interrupt_occured = 0;
+	INIT_DELAYED_WORK(&dwc3_work, dwc3_charging_monitor);
+	
+	dwc3_set_usb_plugin_type =
+				(FUNC )kallsyms_lookup_name("atc260x_set_usb_plugin_type");
+	
+	if(!dwc3_set_usb_plugin_type)
+		adfu_running =1;
+	else 
+		adfu_running =0;
+
+	printk("%s %d adfu_running=%d\n", __func__, __LINE__,adfu_running);
+}
+
+static void usb_charge_detect_exit(void)
+{
+	cancel_delayed_work_sync(&dwc3_work);
+	reset_interrupt_occured = 0;
+}
+
+void dwc3_plug_usb_charge_detect_init(void)
+{
+	reset_interrupt_occured = 0;
+	start_usb_connect_type_detect_work();
+}
+
+void dwc3_plug_usb_charge_detect_exit(void)
+{
+	usb_charge_detect_exit();
+}
+
+#endif
+
 /**
  * dwc3_gadget_set_test_mode - Enables USB2 Test Modes
  * @dwc: pointer to our context structure
@@ -2259,6 +2356,10 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 	reg = dwc3_readl(dwc->regs, DWC3_DCFG);
 	reg &= ~(DWC3_DCFG_DEVADDR_MASK);
 	dwc3_writel(dwc->regs, DWC3_DCFG, reg);
+
+#ifdef USB_CHARGE_DETECT
+	set_connect_type_to_pc_mode();
+#endif
 }
 
 static void dwc3_update_ram_clk_sel(struct dwc3 *dwc, u32 speed)
@@ -2793,6 +2894,10 @@ int dwc3_gadget_init(struct dwc3 *dwc)
 		goto err4;
 	}
 
+#ifdef USB_CHARGE_DETECT
+	usb_charge_detect_init();
+#endif
+
 	return 0;
 
 err4:
@@ -2833,6 +2938,11 @@ void dwc3_gadget_exit(struct dwc3 *dwc)
 
 	dma_free_coherent(dwc->dev, sizeof(*dwc->ctrl_req),
 			dwc->ctrl_req, dwc->ctrl_req_addr);
+
+#ifdef USB_CHARGE_DETECT
+	usb_charge_detect_exit();
+#endif
+
 }
 
 int dwc3_gadget_suspend(struct dwc3 *dwc)

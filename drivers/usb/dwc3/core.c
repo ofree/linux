@@ -48,6 +48,35 @@
 
 #include "debug.h"
 
+extern int owl_dwc3_usb2phy_param_setup(int is_device_mode);
+
+#if SUPPORT_NOT_RMMOD_USBDRV
+#include "plug-core.c"
+#endif
+
+#define MASK_SUPPER_SPEED_FOR_ADFUS
+#ifdef MASK_SUPPER_SPEED_FOR_ADFUS
+static struct dwc3 *adfus_dwc = 0;
+static void dwc3_set_dwc_for_adfus(struct dwc3 *dwc)
+{
+	adfus_dwc = dwc;
+}
+
+void dwc3_mask_supper_speed_for_adfus(void)
+{
+	if(!adfus_dwc) {
+		printk("%s %d _dwc is NULL\n", __func__, __LINE__);
+		return;
+	}
+
+	printk("%s %d\n", __func__, __LINE__);
+	adfus_dwc->maximum_speed = DWC3_DCFG_HIGHSPEED;
+	adfus_dwc->gadget.max_speed		= USB_SPEED_HIGH;
+}
+EXPORT_SYMBOL_GPL(dwc3_mask_supper_speed_for_adfus);
+#endif
+
+
 /* -------------------------------------------------------------------------- */
 
 void dwc3_set_mode(struct dwc3 *dwc, u32 mode)
@@ -745,8 +774,13 @@ static int dwc3_core_init_mode(struct dwc3 *dwc)
 	struct device *dev = dwc->dev;
 	int ret;
 
+#if IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
+	dwc->dr_mode = USB_DR_MODE_PERIPHERAL;
+#endif
+
 	switch (dwc->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
+		owl_dwc3_usb2phy_param_setup(1);
 		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
 		ret = dwc3_gadget_init(dwc);
 		if (ret) {
@@ -1045,6 +1079,14 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	pm_runtime_allow(dev);
 
+#if SUPPORT_NOT_RMMOD_USBDRV
+	dwc3_plug_init(dwc);
+#endif
+
+#ifdef MASK_SUPPER_SPEED_FOR_ADFUS
+	dwc3_set_dwc_for_adfus(dwc);
+#endif
+
 	return 0;
 
 err6:
@@ -1096,6 +1138,11 @@ static int dwc3_remove(struct platform_device *pdev)
 	dwc3_event_buffers_cleanup(dwc);
 	dwc3_free_event_buffers(dwc);
 
+#if SUPPORT_NOT_RMMOD_USBDRV
+	dwc3_plug_exit(dwc);
+#endif
+
+
 	usb_phy_set_suspend(dwc->usb2_phy, 1);
 	usb_phy_set_suspend(dwc->usb3_phy, 1);
 	phy_power_off(dwc->usb2_generic_phy);
@@ -1111,6 +1158,17 @@ static int dwc3_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
+#if SUPPORT_NOT_RMMOD_USBDRV
+static int dwc3_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int dwc3_resume(struct device *dev)
+{
+	return 0;
+}
+#else
 static int dwc3_suspend(struct device *dev)
 {
 	struct dwc3	*dwc = dev_get_drvdata(dev);
@@ -1195,6 +1253,8 @@ static const struct dev_pm_ops dwc3_dev_pm_ops = {
 };
 
 #define DWC3_PM_OPS	&(dwc3_dev_pm_ops)
+#endif
+
 #else
 #define DWC3_PM_OPS	NULL
 #endif

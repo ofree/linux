@@ -104,4 +104,12 @@ config USB_DWC3_QCOM
 	  Recent Qualcomm SoCs ship with one DesignWare Core USB3 IP inside,
 	  say 'Y' or 'M' if you have one such device.
 
+config USB_DWC3_OWL
+	tristate "Actions Platforms"
+	depends on ARCH_OWL
+	default USB_DWC3
+	help
+	  Recent Actions SoCs ship with one DesignWare Core USB3 IP inside,
+	  say 'Y' or 'M' if you have one such device.
+
 endif
