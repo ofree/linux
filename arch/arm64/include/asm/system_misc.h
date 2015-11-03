@@ -44,6 +44,10 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 extern void __show_regs(struct pt_regs *);
 
 extern void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
+extern void (*arm_pm_poweroff)(void);
+
+extern void (*pm_power_reset)(char str, const char *cmd);
+extern void (*pm_power_off)(void);
 
 #define show_unhandled_signals_ratelimited()				\
 ({									\
