@@ -917,6 +917,13 @@ config GPIO_AMD8111
 
 	  If unsure, say N
 
+config GPIO_ATC260X
+	tristate "ATC260X GPIO/SGPIO support"
+	depends on MFD_ATC260X
+	help
+	  This option enables support for GPIOs found
+	  on Actions Semi ATC260X PMIC.
+
 config GPIO_BT8XX
 	tristate "BT8XX GPIO abuser"
 	depends on PCI && VIDEO_BT848=n
