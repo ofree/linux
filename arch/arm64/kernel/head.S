@@ -549,6 +549,73 @@ ENTRY(set_cpu_boot_mode_flag)
 ENDPROC(set_cpu_boot_mode_flag)
 
 /*
+ * FIXME: Boot from EL3, need move to EL3 monitor
+ * TODO: initialize SP, avoid using DE shareram that maybe not available
+ *
+ * intialize cpu and jump to EL2
+ */
+ENTRY(el3_setup)
+	mrs	x0, CurrentEL
+	cmp	x0, #PSR_MODE_EL3t
+	ccmp	x0, #PSR_MODE_EL3h, #0x4, ne
+	b.ne	skip_drop_el2
+
+#define CNTFRQ			0x01800000	/* 24Mhz */
+	ldr	x0, =CNTFRQ
+	msr	cntfrq_el0, x0
+
+#define CPUECTLR_EL1		S3_1_C15_C2_1
+	mrs	x0, CPUECTLR_EL1
+	orr	x0, x0, #(1 << 6) //SMP_EN
+	msr	CPUECTLR_EL1, x0
+	dsb	sy
+	isb
+
+/* CPTR_EL3 definitions */
+#define TCPAC_BIT		(1 << 31)
+#define TTA_BIT			(1 << 20)
+#define TFP_BIT			(1 << 10)
+	mrs	x0, cptr_el3
+	bic	w0, w0, #TCPAC_BIT
+	bic	w0, w0, #TTA_BIT
+	bic	w0, w0, #TFP_BIT
+	msr	cptr_el3, x0
+
+	mov	x0, #0x30			// RES1
+	orr	x0, x0, #(1 << 0)		// Non-secure EL1
+	orr	x0, x0, #(1 << 8)		// HVC enable
+	orr	x0, x0, #(1 << 10)		// 64-bit EL2
+	msr	scr_el3, x0
+
+	ldr	x1, =0xe00f1000 + 0x80		// GICD_IGROUPR
+	ldr	w0, =0xffff00ff			// SGI0~7&&PPI16~32 Grp1 interrupts
+	str	w0, [x1]
+
+	ldr	x1, =0xe00f2000			// GICC_CTLR
+	ldr	w0, [x1]
+	mov	w0, #3				// EnableGrp0 | EnableGrp1
+	str	w0, [x1]
+
+	mov	w0, #1 << 7			// allow NS access to GICC_PMR
+	str	w0, [x1, #4]			// GICC_PMR
+
+	msr	sctlr_el2, xzr
+
+	mrs	x0, hcr_el2
+	orr	x0, x0, (1 << 31)		// EL1 aarch64
+	msr	hcr_el2, x0
+	dsb	sy
+	isb
+
+	mov	x1, #0x3c9			// EL2_SP2 | D | A | I | F
+	msr	elr_el3, x30
+	msr	spsr_el3, x1
+	eret
+skip_drop_el2:
+    ret
+ENDPROC(el3_setup)
+
+/*
  * We need to find out the CPU boot mode long after boot, so we need to
  * store it in a writable variable.
  *
@@ -567,6 +634,7 @@ ENTRY(__boot_cpu_mode)
 	 * cores are held until we're ready for them to initialise.
 	 */
 ENTRY(secondary_holding_pen)
+	bl	el3_setup			// Drop to EL1
 	bl	el2_setup			// Drop to EL1, w20=cpu_boot_mode
 	bl	set_cpu_boot_mode_flag
 	mrs	x0, mpidr_el1

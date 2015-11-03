@@ -71,6 +71,45 @@ static int smp_spin_table_cpu_init(unsigned int cpu)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_OWL
+static int smp_spin_table_cpu_prepare(unsigned int cpu)
+{
+	u32 __iomem *release_addr;
+	u32 __iomem *cpu_ctl;
+
+	if (!cpu_release_addr[cpu])
+		return -ENODEV;
+
+	/* FIXME: cpu power on/off need move to EL3 monitor */
+	release_addr = ioremap(cpu_release_addr[cpu], sizeof(cpu_release_addr[cpu]));
+	cpu_ctl = (u32 *)(((unsigned long)release_addr & ~0xfff) + cpu * 4);
+
+	writel_relaxed(0x1, cpu_ctl);
+	writel_relaxed((u32)(__pa(secondary_holding_pen)), release_addr);
+
+	printk("%s: boot entry: 0x%x, cpu_ctl: 0x%x\n",
+		__FUNCTION__,
+		readl_relaxed(release_addr),
+		readl_relaxed(cpu_ctl));
+
+	while(!(readl_relaxed(cpu_ctl) & 0x10))
+	    ;
+
+	/* wait brom ready */
+	mdelay(1);
+
+	iounmap(release_addr);
+
+	/*
+	 * Send an event to wake up the secondary CPU.
+	 */
+	sev();
+
+	return 0;
+}
+
+#else
+
 static int smp_spin_table_cpu_prepare(unsigned int cpu)
 {
 	__le64 __iomem *release_addr;
@@ -109,6 +148,7 @@ static int smp_spin_table_cpu_prepare(unsigned int cpu)
 
 	return 0;
 }
+#endif
 
 static int smp_spin_table_cpu_boot(unsigned int cpu)
 {

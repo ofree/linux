@@ -46,6 +46,13 @@ config ARCH_MEDIATEK
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
 
+config ARCH_OWL
+	bool "Actions OWL SoC Family"
+	select ARCH_REQUIRE_GPIOLIB
+	select PINCTRL
+	help
+	  This enables support for Actions OWL SoC family
+
 config ARCH_QCOM
 	bool "Qualcomm Platforms"
 	select PINCTRL
