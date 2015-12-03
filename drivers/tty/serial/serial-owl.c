@@ -1369,7 +1369,7 @@ static int owl_serial_probe(struct platform_device *pdev)
 	port->irq = platform_get_irq(pdev, 0);
 	if (!port->irq)
 		return -ENODEV;
-
+#if 0
 	aport->clk = devm_clk_get(&pdev->dev, "uart");
 	if (IS_ERR(aport->clk)) {
 		dev_err(&pdev->dev, "unable	to get UART clock\n");
@@ -1388,7 +1388,7 @@ static int owl_serial_probe(struct platform_device *pdev)
 	reset_control_assert(aport->rst);
 	udelay(10);
 	reset_control_deassert(aport->rst);
-
+#endif
 	init_timer(&aport->rx_dma_timer);
 
 	owl_ports[port->line] = aport;
