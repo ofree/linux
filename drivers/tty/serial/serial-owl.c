@@ -1255,6 +1255,32 @@ static struct console owl_console = {
 
 #define OWL_CONSOLE	(&owl_console)
 
+static void owl_uart_putc(struct uart_port *port, int c)
+{
+	while (readl(port->membase + 0x0c) & (0x1 << 6))
+		;
+	writel(c, port->membase + 0x08);
+}
+
+static void owl_uart_early_write(struct console *con, const char *s, unsigned n)
+{
+	struct earlycon_device *dev = con->data;
+
+	uart_console_write(&dev->port, s, n, owl_uart_putc);
+}
+
+static int __init owl_uart_early_console_setup(struct earlycon_device *device,
+					    const char *opt)
+{
+	if (!device->port.membase)
+		return -ENODEV;
+
+	device->con->write = owl_uart_early_write;
+	return 0;
+}
+EARLYCON_DECLARE(owl, owl_uart_early_console_setup);
+OF_EARLYCON_DECLARE(owl, "arm,owl", owl_uart_early_console_setup);
+
 #else
 #define OWL_CONSOLE	NULL
 #endif
