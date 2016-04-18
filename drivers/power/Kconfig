@@ -508,6 +508,26 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+config BATTERY_ATC2609A
+	tristate "Atc2609a battery driver"
+	depends on CHARGER_ATC260X
+	help
+	  Say Y to enable support for the battery with atc2609a PMIC chip.
+
+config CHARGER_ATC260X
+	tristate "actions ATC260x PMIC CHARGER"
+	depends on MFD_ATC260X
+	help
+	  If you say yes here you will get support for the CHARGER module
+	  of the actions atc260x series PMICs.
+
+config CHARGER_ATC2609A
+	tristate "actions ATC2609A PMIC CHARGER"
+	depends on MFD_ATC260X && CHARGER_ATC260X
+	help
+	  If you say yes here you will get support for the CHARGER module
+	  of the actions atc2609a PMIC.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY
