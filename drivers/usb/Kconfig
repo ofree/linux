@@ -102,6 +102,8 @@ source "drivers/usb/dwc3/Kconfig"
 
 source "drivers/usb/dwc2/Kconfig"
 
+source "drivers/usb/monitor/Kconfig"
+
 source "drivers/usb/chipidea/Kconfig"
 
 source "drivers/usb/isp1760/Kconfig"
