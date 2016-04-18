@@ -523,6 +523,13 @@ config ZX_DMA
 	help
 	  Support the DMA engine for ZTE ZX296702 platform devices.
 
+config DMA_OWL
+	tristate "Actions OWL SoC DMA support"
+	depends on ARCH_OWL
+	select DMA_ENGINE
+	select DMA_VIRTUAL_CHANNELS
+	---help---
+	  Enable support for the Actions OWL SoC DMA controllers.
 
 # driver files
 source "drivers/dma/bestcomm/Kconfig"
