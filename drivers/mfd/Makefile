@@ -194,3 +194,12 @@ intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
 intel-soc-pmic-$(CONFIG_INTEL_PMC_IPC)	+= intel_soc_pmic_bxtwc.o
 obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
 obj-$(CONFIG_MFD_MT6397)	+= mt6397-core.o
+
+atc260x_irkey-objs := atc260x-irkeypad.o
+obj-$(CONFIG_ATC260X_IR)    += atc260x-irkeypad.o
+
+atc260x-objs			:= atc260x-core.o atc260x-auxadc.o atc260x-cmu.o atc260x-pstore.o atc260x-ex-api.o
+obj-$(CONFIG_MFD_ATC260X)	+= atc260x-pm.o
+obj-$(CONFIG_MFD_ATC260X)	+= atc260x.o
+obj-$(CONFIG_MFD_ATC260X_I2C)	+= atc260x-i2c.o
+obj-$(CONFIG_MFD_ATC260X_SPI)	+= atc260x-spi.o
