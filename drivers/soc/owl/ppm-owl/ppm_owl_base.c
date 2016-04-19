@@ -240,8 +240,16 @@ int reset_freq_range(void)
 	return set_governor(GOVERNOR_AUTO_FREQ);
 } */
 
+#if 0
 extern int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy);
+#else
+int __cpufreq_set_policy(struct cpufreq_policy *data,
+				struct cpufreq_policy *policy)
+{
+	return 0;
+}
+#endif
 
 int min, max;
 
