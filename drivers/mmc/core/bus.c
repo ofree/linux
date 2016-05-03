@@ -1,5 +1,5 @@
 /*
- *  linux/drivers/mmc/core/bus.c
+ *  linux/drivers/mmc/core/bus.cbus.c
  *
  *  Copyright (C) 2003 Russell King, All Rights Reserved.
  *  Copyright (C) 2007 Pierre Ossman
@@ -62,6 +62,9 @@ ATTRIBUTE_GROUPS(mmc_dev);
 static int mmc_bus_match(struct device *dev, struct device_driver *drv)
 {
 	return 1;
+	
+
+
 }
 
 static int
@@ -276,9 +279,25 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
 	return card;
 }
 
+	
+		
+		
+		
+
+
+		/* check slot2 singal channel*/
+		
+		
+		
+		/* check slot2 singal channel*/
+		
+		
+
 /*
  * Register a new MMC card with the driver model.
  */
+
+
 int mmc_add_card(struct mmc_card *card)
 {
 	int ret;
@@ -293,7 +312,11 @@ int mmc_add_card(struct mmc_card *card)
 	};
 
 
-	dev_set_name(&card->dev, "%s:%04x", mmc_hostname(card->host), card->rca);
+
+
+	
+		    
+		 dev_set_name(&card->dev,"%s:%04x",mmc_hostname(card->host),card->rca);
 
 	switch (card->type) {
 	case MMC_TYPE_MMC:
@@ -383,3 +406,19 @@ void mmc_remove_card(struct mmc_card *card)
 	put_device(&card->dev);
 }
 
+
+
+
+
+
+	//device_initialize(&card->dev);
+
+	//card->dev.parent = mmc_classdev(host);
+	//card->dev.bus = &mmc_bus_type;
+	//card->dev.release = mmc_release_card;
+	//card->dev.type = type;
+
+
+	
+	//card->dev.parent = NULL;
+	

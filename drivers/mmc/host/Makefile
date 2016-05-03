@@ -76,6 +76,8 @@ obj-$(CONFIG_MMC_SDHCI_IPROC)		+= sdhci-iproc.o
 obj-$(CONFIG_MMC_SDHCI_MSM)		+= sdhci-msm.o
 obj-$(CONFIG_MMC_SDHCI_ST)		+= sdhci-st.o
 
+obj-$(CONFIG_MMC_OWL)			+= owl_mmc_host.o
+owl_mmc_host-y					:= owl_wlan_device.o owl_wlan_driver.o owl_mmc.o
 ifeq ($(CONFIG_CB710_DEBUG),y)
 	CFLAGS-cb710-mmc	+= -DDEBUG
 endif

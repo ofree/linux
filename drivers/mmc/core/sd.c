@@ -1204,10 +1204,22 @@ int mmc_attach_sd(struct mmc_host *host)
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
+	pr_debug("mmc_attach_sd: UART\n");
+	if (host->ops->switch_uart_pinctr(host)) {
+		printk("Err:switch uart pin:%s\n", __FUNCTION__);
+		err = -1;
+		return err;
+	}
 
 	err = mmc_send_app_op_cond(host, 0, &ocr);
 	if (err)
 		return err;
+	pr_debug("mmc_attach_sd: SDCARD\n");
+	if (host->ops->switch_sd_pinctr(host)) {
+		printk("Err:switch sd pin:%s\n", __FUNCTION__);
+		err = -1;
+		return err;
+	}
 
 	mmc_attach_bus(host, &mmc_sd_ops);
 	if (host->ocr_avail_sd)
