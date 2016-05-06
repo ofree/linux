@@ -132,8 +132,6 @@ int	set_plug(u32 mask)
 	u32 cpu_num;
 	int i;
 
-	cpu_hotplug_driver_lock();
-
 	cpu_num = num_possible_cpus();
 
 	/*cpu0 cannot be plugged*/
@@ -165,8 +163,6 @@ int	set_plug(u32 mask)
 	}
 
 set_plug_out:
-	cpu_hotplug_driver_unlock();
-
 	return err;
 }
 
@@ -261,6 +257,7 @@ int set_max_freq_range(void)
 
 	pr_debug("%s\n", __func__);
 
+#ifdef CONFIG_CPU_FREQ
 	policy = cpufreq_cpu_get(0);
 	if (policy != NULL) {
 		ret = cpufreq_get_policy(&new_policy, policy->cpu);
@@ -278,7 +275,7 @@ int set_max_freq_range(void)
 
 		cpufreq_cpu_put(policy);
 	}
-
+#endif
 	return 0;
 }
 
@@ -290,6 +287,7 @@ int set_max_freq(void)
 
 	pr_debug("%s\n", __func__);
 
+#ifdef CONFIG_CPU_FREQ
 	policy = cpufreq_cpu_get(0);
 	if (policy != NULL) {
 		ret = cpufreq_get_policy(&new_policy, policy->cpu);
@@ -310,7 +308,7 @@ int set_max_freq(void)
 
 		cpufreq_cpu_put(policy);
 	}
-
+#endif
 	return 0;
 }
 
@@ -321,6 +319,8 @@ int reset_freq_range(void)
 	struct cpufreq_policy *policy;
 
 	pr_debug("%s\n", __func__);
+
+#ifdef CONFIG_CPU_FREQ
 	policy = cpufreq_cpu_get(0);
 	if (policy != NULL) {
 		ret = cpufreq_get_policy(&new_policy, policy->cpu);
@@ -338,7 +338,7 @@ int reset_freq_range(void)
 
 		cpufreq_cpu_put(policy);
 	}
-
+#endif
 	return 0;
 }
 

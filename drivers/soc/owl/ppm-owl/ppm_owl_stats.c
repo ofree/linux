@@ -202,12 +202,6 @@ error_out:
 	return ret;
 }
 
-static void ppm_stats_update_policy_cpu(struct cpufreq_policy *policy)
-{
-	pr_debug("Updating stats_table for new_cpu %u from last_cpu %u\n",
-			policy->cpu, policy->last_cpu);
-}
-
 static int ppm_stat_notifier_policy(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
@@ -222,8 +216,8 @@ static int ppm_stat_notifier_policy(struct notifier_block *nb,
 	if (policy->cpu != 0)
 		return 0;
 
+#ifdef CONFIG_CPU_FREQ
 	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
-		ppm_stats_update_policy_cpu(policy);
 		return 0;
 	}
 
@@ -236,7 +230,7 @@ static int ppm_stat_notifier_policy(struct notifier_block *nb,
 	ret = ppm_stats_create_table(policy, table);
 	if (ret)
 		return ret;
-
+#endif
 	pr_info("[%s,%d]\n", __func__, __LINE__);
 	return 0;
 }
@@ -259,6 +253,7 @@ static int ppm_stat_notifier_trans(struct notifier_block *nb,
 	if (!stat)
 		return 0;
 
+#ifdef CONFIG_CPU_FREQ
 	old_index = stat->last_index;
 	new_index = freq_table_get_index(stat, freq->new);
 
@@ -275,10 +270,11 @@ static int ppm_stat_notifier_trans(struct notifier_block *nb,
 	stat->last_index = new_index;
 	stat->total_trans++;
 	spin_unlock(&ppm_stats_lock);
+#endif
 	return 0;
 }
 
-static int __cpuinit ppm_stat_cpu_callback(struct notifier_block *nfb,
+static int ppm_stat_cpu_callback(struct notifier_block *nfb,
 							unsigned long action,
 							void *hcpu)
 {

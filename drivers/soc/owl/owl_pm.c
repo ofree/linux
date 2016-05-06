@@ -30,9 +30,9 @@
 #include <linux/kobject.h>
 #include <linux/power_supply.h>
 #include <linux/owl_pm.h>
+#include <linux/psci.h>
 #include <asm/suspend.h>
 #include <asm/cacheflush.h>
-#include <asm/psci.h>
 #include <asm/system_misc.h>
 
 static void __iomem *pm_reg_base;
