@@ -23,26 +23,11 @@
 #include <linux/delay.h>
 #include "clk.h"
 
-#define __clk_get_parent(clk)    (clk->parent)
 #define to_owl_factor(_hw)	container_of(_hw, struct owl_factor, hw)
 #define div_mask(d)		((1 << ((d)->width)) - 1)
 /*
  * clk_round_rate - adjust a rate to the exact rate a clock can provide
  */
-long clk_round_rate(struct clk *clk, unsigned long rate)
-{
-	if (clk->core->ops && clk->core->ops->round_rate) {
-		unsigned long rounded;
-
-		rounded = clk->ops->round_rate(clk, rate);
-
-		return rounded;
-	}
-
-	return rate;
-}
-EXPORT_SYMBOL(clk_round_rate);
-
 static unsigned int _get_table_maxval(const struct clk_factor_table *table)
 {
 	unsigned int maxval = 0;
@@ -132,7 +117,7 @@ static int clk_val_best(struct clk_hw *hw, unsigned long rate,
 			return clkt->val;
 		}
 
-		parent_rate = clk_round_rate(__clk_get_parent(hw->clk),
+		parent_rate = clk_round_rate(clk_get_parent(hw->clk),
 				try_parent_rate);
 		now = DIV_ROUND_UP(parent_rate, clkt->div) * clkt->mul;
 		if (now <= rate && now > best) {
@@ -147,7 +132,7 @@ static int clk_val_best(struct clk_hw *hw, unsigned long rate,
 	if (!bestval) {
 		bestval = _get_table_maxval(clkt);
 		*best_parent_rate = clk_round_rate(
-				__clk_get_parent(hw->clk), 1);
+				clk_get_parent(hw->clk), 1);
 	}
 
 	pr_debug("%s: return bestval %d\n", __func__, bestval);
