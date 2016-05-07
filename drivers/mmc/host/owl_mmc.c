@@ -1794,7 +1794,7 @@ static int __init owl_mmc_probe(struct platform_device *pdev)
 	mmc->caps = MMC_CAP_NEEDS_POLL | MMC_CAP_MMC_HIGHSPEED |
 	    MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA;
 
-	mmc->caps2 = (MMC_CAP2_BOOTPART_NOACC | MMC_CAP2_DETECT_ON_ERR);
+	mmc->caps2 = MMC_CAP2_BOOTPART_NOACC;
 
 	if (of_find_property(dn, "one_bit_width", NULL))
 
@@ -2117,7 +2117,7 @@ static int owl_mmc_suspend(struct device *dev)
 		owl_suspend_wait_data_finish(host, 2000000);
 	}
 
-	ret = mmc_suspend_host(host->mmc);
+	pm_runtime_get_sync(dev);
 	if (mmc && (mmc->card) && (mmc->card->type == MMC_TYPE_SDIO))
 		owl_wlan_set_power(owl_get_wlan_plat_data(), 0, 0);
 
@@ -2153,8 +2153,6 @@ static int owl_mmc_resume(struct device *dev)
 	if (mmc && (mmc->card) && (mmc->card->type == MMC_TYPE_SDIO)) {
 		owl_wlan_set_power(owl_get_wlan_plat_data(), 1, 0);
 	}
-
-	mmc_resume_host(host->mmc);
 
 	return 0;
 }
