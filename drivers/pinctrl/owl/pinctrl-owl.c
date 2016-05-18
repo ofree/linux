@@ -751,19 +751,20 @@ static int owl_confops_pin_config_get(struct pinctrl_dev *pctldev,
 }
 
 static int owl_confops_pin_config_set(struct pinctrl_dev *pctldev,
-		unsigned pin, unsigned long config)
+			unsigned pin,
+			unsigned long *configs,
+			unsigned num_configs)
 {
-	int ret = 0;
+	int ret, i;
 	struct owl_pinctrl *apctl;
 	const struct owl_pinctrl_soc_info *info;
 	const struct owl_pinconf_pad_info *pad_tab;
-	u32 reg, bit, width;
+	unsigned long config;
+	u32 arg, reg, bit, width;
 	u32 val = 0, mask = 0;
 	u32 tmp;
-	enum owl_pinconf_param param = OWL_PINCONF_UNPACK_PARAM(config);
-	u32 arg = OWL_PINCONF_UNPACK_ARG(config);
 
-	PINCTRL_DBG("%s(pin:%d, config:%ld)\n", __func__, pin, config);
+	enum owl_pinconf_param param;
 
 	apctl = pinctrl_dev_get_drvdata(pctldev);
 	info = apctl->info;
@@ -771,27 +772,36 @@ static int owl_confops_pin_config_set(struct pinctrl_dev *pctldev,
 	PINCTRL_DBG("%s(pin:%d)\n", __func__, pin);
 
 
-	ret = owl_pad_pinconf_reg(pad_tab, param, &reg, &bit, &width);
-	if (ret)
-		return ret;
+	for (i = 0; i < num_configs; i++) {
+		config=configs[i];
+		param = OWL_PINCONF_UNPACK_PARAM(config);
+		arg = OWL_PINCONF_UNPACK_ARG(config);
 
-	ret = owl_pad_pinconf_arg2val(pad_tab, param, arg, &val);
-	if (ret)
-		return ret;
+		PINCTRL_DBG("%s(pin:%d, config:%ld)\n", __func__, pin, config);
 
-	/* Update register */
-	mask = (1 << width) - 1;
-	mask = mask << bit;
-	tmp = owl_pinctrl_readl(apctl, reg);
-	tmp &= ~mask;
-	tmp |= val << bit;
-	owl_pinctrl_writel(apctl, tmp, reg);
+		ret = owl_pad_pinconf_reg(pad_tab, param, &reg, &bit, &width);
+		if (ret)
+			return ret;
 
-	return ret;
+		ret = owl_pad_pinconf_arg2val(pad_tab, param, arg, &val);
+		if (ret)
+			return ret;
+
+		/* Update register */
+		mask = (1 << width) - 1;
+		mask = mask << bit;
+		tmp = owl_pinctrl_readl(apctl, reg);
+		tmp &= ~mask;
+		tmp |= val << bit;
+		owl_pinctrl_writel(apctl, tmp, reg);
+	}
+
+	return 0;
 }
 
 static int owl_confops_group_config_get(struct pinctrl_dev *pctldev,
 		unsigned group, unsigned long *config)
+
 {
 	int ret = 0;
 	const struct owl_group *g;
@@ -824,17 +834,24 @@ static int owl_confops_group_config_get(struct pinctrl_dev *pctldev,
 }
 
 static int owl_confops_group_config_set(struct pinctrl_dev *pctldev,
-		unsigned group, unsigned long config)
+				unsigned group,
+				unsigned long *configs,
+				unsigned num_configs)
 {
-	int ret = 0;
+	int ret, i;
 	const struct owl_group *g;
 	struct owl_pinctrl *apctl = pinctrl_dev_get_drvdata(pctldev);
 	const struct owl_pinctrl_soc_info *info = apctl->info;
-	u32 reg, bit, width;
+	unsigned long config;
+	u32 arg, reg, bit, width;
 	u32 val, mask;
 	u32 tmp;
-	enum owl_pinconf_param param = OWL_PINCONF_UNPACK_PARAM(config);
-	u32 arg = OWL_PINCONF_UNPACK_ARG(config);
+	enum owl_pinconf_param param;
+
+	for (i = 0; i < num_configs; i++) {
+	config = configs[i];
+	param = OWL_PINCONF_UNPACK_PARAM(config);
+	arg = OWL_PINCONF_UNPACK_ARG(config);
 
 	g = &info->groups[group];
 	ret = owl_group_pinconf_reg(g, param, &reg, &bit, &width);
@@ -852,8 +869,9 @@ static int owl_confops_group_config_set(struct pinctrl_dev *pctldev,
 	tmp &= ~mask;
 	tmp |= val << bit;
 	owl_pinctrl_writel(apctl, tmp, reg);
+	}
 
-	return ret;
+	return 0;
 }
 
 static struct pinconf_ops owl_confops_ops = {

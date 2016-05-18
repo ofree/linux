@@ -1327,6 +1327,14 @@ static unsigned int  owl_mfp3_8_funcs[] = {
 	S900_MUX_I2C4,
 };
 
+static unsigned int  owl_uart2_dummy_pads[] = {
+	P_UART2_RX,
+	P_UART2_TX,
+};
+
+static unsigned int  owl_uart2_dummy_funcs[] = {
+	S900_MUX_UART2,
+};
 
 /*****End MFP group data****************************/
 
@@ -1623,6 +1631,8 @@ const struct owl_group s900_groups[] = {
 	MUX_PG(mfp3_10_nand1_ceb0, 3, 10, 1),
 	MUX_PG(mfp3_9, 3, 9, 1),
 	MUX_PG(mfp3_8, 3, 8, 1),
+
+	MUX_PG_DUMMY(uart2_dummy),
 
 	PADDRV_PG(paddrv0_31_30, 0, 30),
 	PADDRV_PG(paddrv0_29_28, 0, 28),
