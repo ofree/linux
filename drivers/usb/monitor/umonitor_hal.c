@@ -42,8 +42,10 @@
 static void dwc3_controllor_exit(usb_hal_monitor_t *pdev);
 void __dwc3_controllor_mode_cfg(usb_hal_monitor_t *pdev);
 
-extern int atc260x_enable_vbusotg(int on);
-
+int atc260x_enable_vbusotg(int on)
+{
+	return 0;
+}
 void mon_dwc3_set_mode(usb_hal_monitor_t *pdev, int mode)
 {
 	u32 reg;
