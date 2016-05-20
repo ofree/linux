@@ -134,7 +134,7 @@ static int owl_switch_sd_pinctr(struct mmc_host *mmc)
 }
 
 #undef pr_debug
-/*#define OWL_MMC_DEBUG*/
+#undef OWL_MMC_DEBUG
 #ifdef OWL_MMC_DEBUG
 #define pr_debug(format, arg...)	\
 	printk(KERN_INFO format, ##arg)
@@ -675,7 +675,7 @@ static void owl_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (ios->timing != host->timing) {
 		host->timing = ios->timing;
-		if (ios->timing == MMC_TIMING_UHS_DDR50) {
+		if (ios->timing >= MMC_TIMING_UHS_DDR50) {
 			ctrl_reg |= (1 << 2);
 		}
 	}
@@ -897,8 +897,8 @@ static int owl_mmc_send_command(struct owl_mmc_host *host,
 	/* start transfer */
 	writel(mode, HOST_CTL(host));
 
-	pr_debug("SDC%d send CMD%d, SD_CTL=0x%x\n", host->id,
-		 cmd->opcode, readl(HOST_CTL(host)));
+	pr_debug("SDC%d send CMD%d, flag=0x%x, SD_EN=0x%x, SD_CTL=0x%x\n", host->id,
+		 cmd->opcode, cmd->flags, readl(HOST_EN(host)), readl(HOST_CTL(host)));
 
 	/* date cmd return */
 	if (data) {
@@ -958,8 +958,9 @@ out:
 
 }
 
-static void owl_mmc_dma_complete(struct owl_mmc_host *host)
+static void owl_mmc_dma_complete(void *data)
 {
+	struct owl_mmc_host *host = (struct owl_mmc_host *) data;
 	BUG_ON(!host->mrq->data);
 
 	if (host->mrq->data) {
@@ -1150,6 +1151,7 @@ static void owl_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (ret == DATA_CMD) {
 
 		if (!wait_for_completion_timeout(&host->sdc_complete, 10 * HZ)) {
+
 			pr_err
 			    ("!!!host%d:wait date transfer ts intrupt timeout\n",
 			     host->id);
@@ -1792,7 +1794,7 @@ static int __init owl_mmc_probe(struct platform_device *pdev)
 
 	mmc->ocr_avail = ACTS_MMC_OCR;
 	mmc->caps = MMC_CAP_NEEDS_POLL | MMC_CAP_MMC_HIGHSPEED |
-	    MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA;
+	    MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA | MMC_CAP_WAIT_WHILE_BUSY;
 
 	mmc->caps2 = MMC_CAP2_BOOTPART_NOACC;
 
