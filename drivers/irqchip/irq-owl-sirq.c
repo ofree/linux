@@ -28,8 +28,8 @@
 #include <linux/interrupt.h>
 #include <linux/irqchip/chained_irq.h>
 #include <linux/syscore_ops.h>
+#include <linux/irqchip.h>
 #include <asm/irq.h>
-#include "irqchip.h"
 
 #define OWL_MAX_NR_SIRQS			3
 
@@ -249,7 +249,6 @@ int __init owl_sirq_init(struct owl_sirq_info *sirq_info, int nr_sirq,
 
 		irq_set_chip_and_handler(sirq->virq, &owl_irq_chip,
 				handle_level_irq);
-		set_irq_flags(sirq->virq, IRQF_VALID);
 		irq_set_chip_data(sirq->virq, sirq);
 
 		pr_debug("%s: virq %d, hwirq %ld, parrent_irq %d\n", __func__,
