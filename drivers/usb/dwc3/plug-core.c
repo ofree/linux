@@ -22,17 +22,30 @@
 
 #if SUPPORT_NOT_RMMOD_USBDRV
 
-extern void dwc3_gadget_plug_usb2_phy_suspend(struct dwc3 *dwc, int suspend);
+void dwc3_gadget_plug_usb2_phy_suspend(struct dwc3 *dwc, int suspend)
+{
+	return;
+}
 extern int dwc3_gadget_plugin_init(struct dwc3 *dwc);
 extern void dwc3_gadget_plug_disconnect(struct dwc3 *dwc);
-extern void set_dwc3_gadget_plugin_flag(int flag);
 extern int dwc3_gadget_plug_pullup(struct usb_gadget *g, int is_on);
 extern int dwc3_gadget_plug_resume(struct dwc3 *dwc);
 #ifdef USB_CHARGE_DETECT
-extern void dwc3_plug_usb_charge_detect_init(void);
-extern void dwc3_plug_usb_charge_detect_exit(void);
+void dwc3_plug_usb_charge_detect_init(void)
+{
+	return;
+}
+
+void dwc3_plug_usb_charge_detect_exit(void)
+{
+	return;
+}
 #endif
 
+void set_dwc3_gadget_plugin_flag(int flag)
+{
+	return;
+}
 
 static int dwc3_core_init(struct dwc3 *dwc);
 static int dwc3_event_buffers_setup(struct dwc3 *dwc);
@@ -66,6 +79,7 @@ static FUNC dwc3_owl_plug_suspend;
 static FUNC dwc3_owl_plug_resume;
 
 
+#ifdef CONFIG_USB_GADGET
 static int dwc3_gadget_plugout(struct dwc3_plug *dwc_plug)
 {
 	struct dwc3 *dwc = dwc_plug->dwc;
@@ -102,7 +116,16 @@ static int dwc3_gadget_plugin(struct dwc3_plug *dwc_plug)
 
 	return 0;
 }
-
+#else
+static int dwc3_gadget_plugout(struct dwc3_plug *dwc_plug)
+{
+	return 0;
+}
+static int dwc3_gadget_plugin(struct dwc3_plug *dwc_plug)
+{
+	return 0;
+}
+#endif
 
 static int dwc3_plug_out(struct dwc3_plug *dwc_plug, int s)
 {
