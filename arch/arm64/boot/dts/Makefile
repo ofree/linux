@@ -13,6 +13,7 @@ dts-dirs += qcom
 dts-dirs += rockchip
 dts-dirs += sprd
 dts-dirs += xilinx
+dts-dirs += owl
 
 subdir-y	:= $(dts-dirs)
 
