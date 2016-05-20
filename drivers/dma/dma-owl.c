@@ -947,10 +947,12 @@ static void owl_dma_desc_free(struct virt_dma_desc *vd)
 	owl_dma_free_txd(od, txd);
 }
 
-static int owl_dma_terminate_all(struct owl_dma_vchan *vchan)
+static int owl_dma_terminate_all(struct dma_chan *chan)
 {
+	struct owl_dma_vchan *vchan = to_owl_vchan(chan);
 	struct owl_dma *od = to_owl_dma(vchan->vc.chan.device);
 	unsigned long flags;
+
 	LIST_HEAD(head);
 
 	dev_dbg(chan2dev(&vchan->vc.chan), "%s: vchan(drq:%d), pchan(id:%d)\n",
@@ -1040,35 +1042,15 @@ static int owl_dma_resume(struct dma_chan *chan)
 	return 0;
 }
 
-static int owl_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-			   unsigned long arg)
+static int owl_set_runtime_config(struct dma_chan *chan,
+			struct dma_slave_config *config)
 {
 	struct owl_dma_vchan *vchan = to_owl_vchan(chan);
-	int ret = 0;
 
-	dev_dbg(chan2dev(chan), "%s: cmd %d\n", __func__, cmd);
+	memcpy(&vchan->cfg, (void *)config,
+		sizeof(struct dma_slave_config));
 
-	switch (cmd) {
-	case DMA_RESUME:
-		owl_dma_resume(chan);
-		break;
-
-	case DMA_PAUSE:
-		owl_dma_pause(chan);
-		break;
-
-	case DMA_TERMINATE_ALL:
-		ret = owl_dma_terminate_all(vchan);
-		break;
-	case DMA_SLAVE_CONFIG:
-		memcpy(&vchan->cfg, (void *)arg,
-			sizeof(struct dma_slave_config));
-		break;
-	default:
-		ret = -ENXIO;
-		break;
-	}
-	return ret;
+	return 0;
 }
 
 /* The channel should be paused when calling this */
@@ -1127,7 +1109,7 @@ static enum dma_status owl_dma_tx_status(struct dma_chan *chan,
 	size_t bytes = 0;
 
 	ret = dma_cookie_status(chan, cookie, state);
-	if (ret == DMA_SUCCESS)
+	if (ret == DMA_COMPLETE)
 		return ret;
 
 	/*
@@ -1142,7 +1124,7 @@ static enum dma_status owl_dma_tx_status(struct dma_chan *chan,
 
 	spin_lock_irqsave(&vchan->vc.lock, flags);
 	ret = dma_cookie_status(chan, cookie, state);
-	if (ret != DMA_SUCCESS) {
+	if (ret != DMA_COMPLETE) {
 		vd = vchan_find_desc(&vchan->vc, cookie);
 		if (vd) {
 			/* On the issued list, so hasn't been processed yet */
@@ -1338,7 +1320,7 @@ err_txd_free:
 static struct dma_async_tx_descriptor *
 owl_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
 		size_t period_len, enum dma_transfer_direction dir,
-		unsigned long flags, void *context)
+		unsigned long flags)
 {
 	struct owl_dma *od = to_owl_dma(chan->device);
 	struct owl_dma_vchan *vchan = to_owl_vchan(chan);
@@ -1548,7 +1530,11 @@ static int owl_dma_probe(struct platform_device *pdev)
 	od->dma.device_prep_dma_memcpy = owl_dma_prep_memcpy;
 	od->dma.device_prep_slave_sg = owl_dma_prep_slave_sg;
 	od->dma.device_prep_dma_cyclic = owl_prep_dma_cyclic;
-	od->dma.device_control = owl_dma_control;
+	od->dma.device_config = owl_set_runtime_config;
+	od->dma.device_pause = owl_dma_pause;
+	od->dma.device_resume = owl_dma_resume;
+
+	od->dma.device_terminate_all = owl_dma_terminate_all;
 	INIT_LIST_HEAD(&od->dma.channels);
 
 	od->clk = devm_clk_get(&pdev->dev, NULL);
