@@ -536,6 +536,7 @@ static int xhci_all_ports_seen_u0(struct xhci_hcd *xhci)
  * device contexts (?), set up a command ring segment (or two?), create event
  * ring (one for now).
  */
+extern int owl_dwc3_usb2phy_param_setup(int is_device_mode);
 int xhci_init(struct usb_hcd *hcd)
 {
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
