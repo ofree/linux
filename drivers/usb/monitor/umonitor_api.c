@@ -152,7 +152,7 @@ static ssize_t mon_config_store(struct kobject *kobj,
 #define MON_STATUS_ATTR(x)  static struct kobj_attribute x##_attribute = \
 		__ATTR(x, S_IRUGO, mon_status_show,  NULL)
 #define MON_CONFIG_ATTR(x)  static struct kobj_attribute x##_attribute = \
-		__ATTR(x, (S_IRUGO|S_IWUGO), mon_config_show, mon_config_store)
+		__ATTR(x, 0644, mon_config_show, mon_config_store)
 
 	/* default just for usb port0. */
 static void mon_port_putt_msg(unsigned int msg);
