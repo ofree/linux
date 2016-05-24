@@ -774,9 +774,7 @@ static int dwc3_core_init_mode(struct dwc3 *dwc)
 	struct device *dev = dwc->dev;
 	int ret;
 
-#if IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
 	dwc->dr_mode = USB_DR_MODE_PERIPHERAL;
-#endif
 
 	switch (dwc->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:

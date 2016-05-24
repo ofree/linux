@@ -1033,7 +1033,7 @@ static ssize_t mon_config_store(struct kobject *kobj, struct kobj_attribute *att
 		else
 			pr_info("\n debug vbus clear!!\n");
 	}
-#ifndef CONFIG_USB_PLATFORM_LINUX
+//#ifndef CONFIG_USB_PLATFORM_LINUX
 #ifdef SUPPORT_NOT_RMMOD_USBDRV
 	else if (ATTRCMP(usb_con_msg)) {
 		strcpy(pconfig->usb_con_msg, instr);
@@ -1041,7 +1041,7 @@ static ssize_t mon_config_store(struct kobject *kobj, struct kobj_attribute *att
 		pr_info("\n write usb_con_msg %s\n", instr);
 	}
 #endif
-#endif
+//#endif
 	else {
 		/* do nothing. */
 		MONITOR_PRINTK("store attr err!\n");
