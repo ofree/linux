@@ -75,12 +75,15 @@ typedef struct umon_port_config {
 } umon_port_config_t;
 
 
+#define DEBUG_MONITOR
 #ifdef DEBUG_MONITOR
 #define MONITOR_PRINTK(fmt, args...)    pr_info(fmt, ## args)
 #else
 #define MONITOR_PRINTK(fmt, args...)    /*not printk*/
 #endif
 
+
+#define ERR_MONITOR
 #ifdef ERR_MONITOR
 #define MONITOR_ERR(fmt, args...)    pr_err(fmt, ## args)
 #else
