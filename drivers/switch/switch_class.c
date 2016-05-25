@@ -17,6 +17,7 @@
 
 #include <linux/module.h>
 #include <linux/types.h>
+#include <linux/stat.h>
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/fs.h>
@@ -54,8 +55,8 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
 	return sprintf(buf, "%s\n", sdev->name);
 }
 
-static DEVICE_ATTR(state, S_IRUGO | S_IWUSR, state_show, NULL);
-static DEVICE_ATTR(name, S_IRUGO | S_IWUSR, name_show, NULL);
+static DEVICE_ATTR(state, S_IRUGO, state_show, NULL);
+static DEVICE_ATTR(name, S_IRUGO, name_show, NULL);
 
 void switch_set_state(struct switch_dev *sdev, int state)
 {
