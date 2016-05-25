@@ -46,7 +46,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
-#include <linux/wakelock.h>
 #include <linux/suspend.h>
 #include <linux/kallsyms.h>
 #include <linux/uaccess.h>
@@ -124,7 +123,6 @@ struct monitor_con {
 	volatile unsigned int det_plugout_req;
 	struct timer_list port_timer;
 	struct timer_list check_timer;
-	struct wake_lock monitor_wake_lock;
 #if SUPPORT_NOT_RMMOD_USBDRV
 	int dwc3_status;
 	int xhci_status;
@@ -233,8 +231,6 @@ mon_adjust_state:
 		p_hal->suspend_or_resume(p_hal, 0);
 		my_mon->dwc3_set_plugstate(PLUGSTATE_A_RESUME);
 		my_mon->xhci_set_plugstate(PLUGSTATE_A_RESUME);
-		wake_lock_timeout(&my_mon->monitor_wake_lock, 12*HZ);
-		pr_info("----now lock for 12*HZ\n");
 	}
 	if (my_mon->port_status.udisk_connected == 0) {
 		if ((my_mon->xhci_status == PLUGSTATE_A_IN) || (my_mon->xhci_status == PLUGSTATE_A_RESUME)) {
@@ -369,15 +365,6 @@ static ssize_t umonitor_switch_state(struct switch_dev *sdev, char *buf)
 {
 	struct port_dev *port_dev = container_of(sdev, struct port_dev, sdev);
 	return sprintf(buf, "%s\n", port_dev->state_msg);
-}
-
-/*release wake lock*/
-static void monitor_release_wakelock(struct work_struct *work)
-{
-	if (wake_lock_register_cnt > 0) {
-		wake_lock_register_cnt--;
-		wake_unlock(&my_mon->monitor_wake_lock);
-	}
 }
 
 #ifdef CONFIG_OF
@@ -617,9 +604,6 @@ static int monitor_probe(struct platform_device *_dev)
 		goto err_monitor_probe_fail;
 	}
 
-	MONITOR_PRINTK(KERN_EMERG"%s--%d, initalize a wake_lock\n", __FILE__, __LINE__);
-	wake_lock_init(&my_mon->monitor_wake_lock, WAKE_LOCK_SUSPEND, "usb_monitor");
-
 	init_waitqueue_head(&my_mon->mon_wait);
 	my_mon->det_plugin_req = 0;
 
@@ -644,7 +628,6 @@ static int monitor_probe(struct platform_device *_dev)
 
 	monitor_work_pending = 0;
 	wake_lock_register_cnt = 0;
-	INIT_DELAYED_WORK(&monitor_work, monitor_release_wakelock);
 	INIT_DELAYED_WORK(&monitor_resume_work, monitor_resume_delay_work);
 #ifdef CONFIG_USB_PLATFORM_LINUX
 	//if (owl_get_boot_mode() != OWL_BOOT_MODE_UPGRADE) {
@@ -673,8 +656,6 @@ static int monitor_remove(struct platform_device *_dev)
 	del_timer_sync(&my_mon->port_timer);
 	del_timer_sync(&my_mon->check_timer);
 	cancel_delayed_work_sync(&monitor_resume_work);
-	/*wake_unlock(&my_mon->monitor_wake_lock);*/
-	wake_lock_destroy(&my_mon->monitor_wake_lock);
 
 	/* wait for mon_thread exit */
 	if (my_mon->tsk != NULL) {
@@ -983,7 +964,7 @@ static ssize_t mon_config_store(struct kobject *kobj, struct kobj_attribute *att
 		goto out;
 	}
 
-	ret = strict_strtoul(instr, 0, &val);
+	ret = kstrtoul(instr, 0, &val);
 	MONITOR_PRINTK("strict_strtoul:%d\n", (unsigned int)val);
 
 	if (ATTRCMP(run)) {
@@ -1118,12 +1099,6 @@ static int usb_detect_plugout_event(void)
 		if (umonitor_status->det_phase == 0) {
 			if (((message & (0x1 << MONITOR_B_IN)) != 0) ||
 				((message & (0x1 << MONITOR_CHARGER_IN)) != 0)) {
-				if ((my_mon->port_status.charger_connected == CONNECT_USB_ADAPTOR) &&
-					(wake_lock_register_cnt > 0)) {
-					pr_info("wakelock release!!!!!!!!\n");
-					wake_lock_register_cnt--;
-					wake_unlock(&my_mon->monitor_wake_lock);
-				}
 				umonitor_status->vbus_status = (unsigned char) p_hal->get_vbus_state(p_hal);
 				if (umonitor_status->vbus_status == USB_VBUS_LOW) {
 					my_mon->port_status.charger_connected = 0;
@@ -1179,10 +1154,6 @@ static void mon_port_putt_msg(unsigned int msg)
 			cancel_delayed_work_sync(&monitor_work);
 			monitor_work_pending = 0;
 		}
-		if (!wake_lock_register_cnt) {
-			wake_lock(&my_mon->monitor_wake_lock);
-			wake_lock_register_cnt++;
-		}
 		pstatus->pc_connected = 1;
 		pstatus->charger_connected = CONNECT_USB_PORT; /*set usb pc first,it'll jude by dwc3 interrupt */
 		sprintf(my_mon->port_dev.state_msg, "USB_B_IN");
@@ -1210,32 +1181,26 @@ static void mon_port_putt_msg(unsigned int msg)
 	case MON_MSG_USB_A_IN:
 		pstatus->udisk_connected = 1;
 		pr_info("%s--%d, wake_lock !!!\n", __FILE__, __LINE__);
-		/*wake_lock(&my_mon->monitor_wake_lock);*/
 		sprintf(my_mon->port_dev.state_msg, "USB_A_IN");
 #ifdef CONFIG_USB_PLATFORM_LINUX
 		monitor_handle_plug_in_out_msg(my_mon->port_dev.state_msg);
 #else
 		switch_set_state(&my_mon->port_dev.sdev, msg);
 #endif
-		wake_lock_timeout(&my_mon->monitor_wake_lock, 10*HZ);
-		pr_info("----monitor_wake_lock for 10s\n");
 		break;
 	case MON_MSG_USB_A_OUT:
 		pstatus->udisk_connected = 0;
 		pr_info("%s--%d, wake_unlock !!!\n", __FILE__, __LINE__);
-		/*wake_unlock(&my_mon->monitor_wake_lock);*/
 		sprintf(my_mon->port_dev.state_msg, "USB_A_OUT");
 #ifdef CONFIG_USB_PLATFORM_LINUX
 		monitor_handle_plug_in_out_msg(my_mon->port_dev.state_msg);
 #else
 		switch_set_state(&my_mon->port_dev.sdev, msg);
 #endif
-		wake_lock_timeout(&my_mon->monitor_wake_lock, 10*HZ);
 		break;
 	case MON_MSG_USB_CHARGER_IN:
 		pstatus->charger_connected = 1;
 		/*pr_info("%s--%d, wake_lock !!!\n", __FILE__, __LINE__);*/
-		wake_lock_timeout(&my_mon->monitor_wake_lock, 10*HZ);
 		sprintf(my_mon->port_dev.state_msg, "USB_CHARGER_IN");
 #ifdef CONFIG_USB_PLATFORM_LINUX
 		monitor_handle_plug_in_out_msg(my_mon->port_dev.state_msg);
@@ -1246,7 +1211,6 @@ static void mon_port_putt_msg(unsigned int msg)
 	case MON_MSG_USB_CHARGER_OUT:
 		pstatus->charger_connected = 0;
 		pr_info("%s--%d, wake_unlock !!!\n", __FILE__, __LINE__);
-		wake_unlock(&my_mon->monitor_wake_lock);
 		sprintf(my_mon->port_dev.state_msg, "USB_CHARGER_OUT");
 #ifdef CONFIG_USB_PLATFORM_LINUX
 		monitor_handle_plug_in_out_msg(my_mon->port_dev.state_msg);
@@ -1270,12 +1234,6 @@ EXPORT_SYMBOL_GPL(usb_set_vbus_power);
 void monitor_set_usb_plugin_type(int value)
 {
 	my_mon->port_status.charger_connected = value;
-	if ((wake_lock_active(&my_mon->monitor_wake_lock) == false) &&
-			(value == CONNECT_USB_PORT) && (my_mon->run == 1)) {
-		pr_info("\n usb reset interrupt,get wakelock!!\n");
-		wake_lock_register_cnt = 1;
-		wake_lock(&my_mon->monitor_wake_lock);
-	}
 }
 EXPORT_SYMBOL_GPL(monitor_set_usb_plugin_type);
 static int __init monitor_init(void)
