@@ -121,14 +121,16 @@ static int usb_get_vbus_state(usb_hal_monitor_t *pdev)
 		break;
 	case UMONITOR_GPIO_VBUS:
 		break;
-#if 0
 	case UMONITOR_DC5V_VBUS:
+		/* force usb vubs low */
+		ret = USB_VBUS_LOW;
+#if 0
 		ret = atc260x_ex_auxadc_read_by_name("VBUSV", &adc_val);
 		if (ret < 0)
 			break;
 		ret = (adc_val > VBUS_THRESHOLD) ? USB_VBUS_HIGH : USB_VBUS_LOW;
-		break;
 #endif
+		break;
 	default:
 		break;
 	}
