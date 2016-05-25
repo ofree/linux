@@ -180,6 +180,7 @@ static int usb_get_idpin_state(usb_hal_monitor_t *pdev)
 		return pdev->config->idpin_debug ? USB_ID_STATE_DEVICE : USB_ID_STATE_HOST;
 	if (pdev->config->idpin_debug == 2)
 		pr_info("\n usb_get_idpin_state: %s \n", (ret == 1) ? "device" : "host");
+	pr_info("dnx usb_get_idpin_state: %d\n", ret);
 	return ret;
 }
 
