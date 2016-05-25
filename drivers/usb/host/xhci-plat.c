@@ -73,6 +73,7 @@ static int xhci_plat_start(struct usb_hcd *hcd)
 	return xhci_run(hcd);
 }
 
+extern void arch_setup_dma_ops_xhci(struct device *dev);
 static int xhci_plat_probe(struct platform_device *pdev)
 {
 	struct device_node	*node = pdev->dev.of_node;
@@ -93,6 +94,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0)
 		return -ENODEV;
+
+	arch_setup_dma_ops_xhci(&pdev->dev);
 
 	/* Try to set 64-bit DMA first */
 	if (WARN_ON(!pdev->dev.dma_mask))

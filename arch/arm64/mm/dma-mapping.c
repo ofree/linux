@@ -979,6 +979,12 @@ static void __iommu_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 { }
 
 #endif  /* CONFIG_IOMMU_DMA */
+void arch_setup_dma_ops_xhci(struct device *dev)
+{
+	if (!dev->archdata.dma_ops)
+		dev->archdata.dma_ops = &swiotlb_dma_ops;
+}
+EXPORT_SYMBOL(arch_setup_dma_ops_xhci);
 
 void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 			struct iommu_ops *iommu, bool coherent)
