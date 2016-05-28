@@ -983,6 +983,7 @@ static int _atc260x_pm_get_bus_info(uint *bus_num, uint *addr, uint *ic_type)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static struct owl_pmic_pm_ops atc260x_pm_pmic_ops = {
 	.set_wakeup_src = _atc260x_pm_set_wakeup_src,
 	.get_wakeup_src = _atc260x_pm_get_wakeup_src,
@@ -1001,7 +1002,7 @@ static struct owl_pmic_pm_ops atc260x_pm_pmic_ops = {
 
 	.get_bus_info = _atc260x_pm_get_bus_info,
 };
-
+#endif
 /* ---------- sysfs interface ----------------------------------------------- */
 
 static ssize_t atc260x_wakeup_attr_shown(struct kobject *kobj,
@@ -1509,8 +1510,9 @@ static int atc260x_pm_probe(struct platform_device *pdev)
 		goto label_err_lv3;
 	}
 
+#ifdef CONFIG_PM_SLEEP
 	owl_pmic_set_pm_ops(&atc260x_pm_pmic_ops);
-
+#endif
 	dev_info(atc260x_pm->dev, "#####%s PMU_SYS_CTL0:0x%x ####\n", __func__,
 		 atc260x_reg_read(atc260x,
 				  sc_atc260x_pm_regtbl_sysctl0[atc260x_pm->
@@ -1521,7 +1523,9 @@ static int atc260x_pm_probe(struct platform_device *pdev)
       label_err_lv3:
 	unregister_pm_notifier(&(atc260x_pm->pm_nb));
       label_err_lv2:
+#ifdef CONFIG_PM_SLEEP
 	owl_pmic_set_pm_ops(NULL);
+#endif
 	/*label_err_lv1: */
 	platform_set_drvdata(pdev, NULL);
 	if (s_current_atc260x_pm_obj == atc260x_pm) {
@@ -1535,7 +1539,9 @@ static int atc260x_pm_remove(struct platform_device *pdev)
 	struct atc260x_pm_dev *atc260x_pm = platform_get_drvdata(pdev);
 	sysfs_remove_group(power_kobj, &asoc_pmattr_group);
 	unregister_pm_notifier(&(atc260x_pm->pm_nb));
+#ifdef CONFIG_PM_SLEEP
 	owl_pmic_set_pm_ops(NULL);
+#endif
 	platform_set_drvdata(pdev, NULL);
 	if (s_current_atc260x_pm_obj == atc260x_pm) {
 		s_current_atc260x_pm_obj = NULL;
