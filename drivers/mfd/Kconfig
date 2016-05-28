@@ -111,7 +111,7 @@ config MFD_ATC260X_SPI
 	select REGMAP_SPI
 	select REGMAP_IRQ
 	select MFD_ATC260X
-	depends on SPI_MASTER=y && GENERIC_HARDIRQS
+	depends on SPI_MASTER=y
 	help
 	  Support for the Actions ATC260x PMIC
 	  when controlled using SPI. This driver provides common support
@@ -123,7 +123,7 @@ config MFD_ATC260X_I2C
 	select REGMAP_I2C
 	select REGMAP_IRQ
 	select MFD_ATC260X
-	depends on I2C=y && GENERIC_HARDIRQS
+	depends on I2C=y
 	help
 	  Support for the Actions ATC260x PMIC
 	  when controlled using I2C. This driver provides common support

@@ -1029,7 +1029,7 @@ static ssize_t atc260x_wakeup_attr_store(struct kobject *kobj,
 
 	pr_debug("%s %d: index %d\n", __FUNCTION__, __LINE__, index);
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 
@@ -1060,7 +1060,7 @@ static ssize_t atc260x_wakeup_srcs_attr_store(struct kobject *kobj,
 
 	pr_debug("%s %d:\n", __FUNCTION__, __LINE__);
 
-	ret = strict_strtoul(buf, 0, &wakeup_src);
+	ret = kstrtoul(buf, 0, &wakeup_src);
 	if (ret < 0)
 		return ret;
 
@@ -1119,7 +1119,7 @@ static ssize_t atc260x_s2tos3_timeout_store(struct kobject *kobj,
 
 	tbl_size = ARRAY_SIZE(s2tos3_timeout_table);
 
-	ret = strict_strtoul(instr, 0, &timeout);
+	ret = kstrtoul(instr, 0, &timeout);
 	if (ret)
 		return ret;
 
@@ -1202,7 +1202,7 @@ static ssize_t atc260x_s3tos4_timeout_store(struct kobject *kobj,
 
 	tbl_size = ARRAY_SIZE(s3tos4_timeout_table);
 
-	ret = strict_strtoul(instr, 0, &timeout);
+	ret = kstrtoul(instr, 0, &timeout);
 	if (ret)
 		return ret;
 
