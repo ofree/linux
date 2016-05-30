@@ -834,25 +834,17 @@ static int atc260x_regulator_probe(struct platform_device *pdev)
 {
 	struct regulator_config config = { };
 	struct regulator_init_data *init_data;
+	struct device_node *node;
 	struct atc260x_dev *atc260x;
 	struct atc260x_regulator_dev *atc260x_regu;
 	uint regu_id;
 	int ret;
 
+	node = pdev->dev.of_node;
 	atc260x = atc260x_get_parent_dev(&pdev->dev);
 	regu_id = pdev->id;
 
 	dev_info(&pdev->dev, "Probing %s, id=%u\n", pdev->name, regu_id);
-
-	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
-	if (!init_data)
-		return -ENOMEM;
-	/* get other stuff from DTS */
-	if (of_find_property(pdev->dev.of_node, "regulator-suspend-off", NULL)) {
-		init_data->constraints.state_standby.disabled = 1;
-		init_data->constraints.state_mem.disabled = 1;
-		init_data->constraints.state_disk.disabled = 1;
-	}
 
 	atc260x_regu =
 	    devm_kzalloc(&pdev->dev, sizeof(struct atc260x_regulator_dev),
@@ -861,6 +853,21 @@ static int atc260x_regulator_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Unable to allocate private data\n");
 		return -ENOMEM;
 	}
+
+	atc260x_regu->regulator_desc.name = dev_name(&pdev->dev);
+	atc260x_regu->regulator_desc.type = REGULATOR_VOLTAGE;
+	atc260x_regu->regulator_desc.owner = THIS_MODULE;
+
+	init_data = of_get_regulator_init_data(&pdev->dev, node, &atc260x_regu->regulator_desc);
+	if (!init_data)
+		return -ENOMEM;
+	/* get other stuff from DTS */
+	if (of_find_property(node, "regulator-suspend-off", NULL)) {
+		init_data->constraints.state_standby.disabled = 1;
+		init_data->constraints.state_mem.disabled = 1;
+		init_data->constraints.state_disk.disabled = 1;
+	}
+
 	atc260x_regu->dev = &pdev->dev;
 	atc260x_regu->atc260x = atc260x;
 	atc260x_regu->regu_id = regu_id;

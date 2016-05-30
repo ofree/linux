@@ -356,6 +356,8 @@ static int atc260x_switch_ldo_probe(struct platform_device *pdev)
 	};
 	struct regulator_config config = { };
 	struct regulator_init_data *init_data;
+	struct regulator_desc *rdesc;
+	struct device_node *node;
 	struct atc260x_dev *atc260x;
 	struct atc260x_swldo_dev *ldo;
 	uint ic_type;
@@ -366,10 +368,7 @@ static int atc260x_switch_ldo_probe(struct platform_device *pdev)
 
 	atc260x = atc260x_get_parent_dev(&pdev->dev);
 
-	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
-	if (!init_data) {
-		return -ENOMEM;
-	}
+	node = pdev->dev.of_node;
 
 	ldo =
 	    devm_kzalloc(&pdev->dev, sizeof(struct atc260x_swldo_dev),
@@ -379,10 +378,23 @@ static int atc260x_switch_ldo_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	ldo->name = of_get_property(node, "regulator-name", NULL);
+	if (ldo->name) {
+		dev_info(&pdev->dev, "Probing %s, fail to find node\n", pdev->name);
+		return -ENODEV;
+	}
+	rdesc = &ldo->desc;
+	rdesc->name = ldo->name;
+	rdesc->type = REGULATOR_VOLTAGE;
+	rdesc->owner = THIS_MODULE;
+
+	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node, rdesc);
+	if (!init_data) {
+		return -ENOMEM;
+	}
+
 	ldo->atc260x = atc260x;
 	ldo->desc.id = id;
-	ldo->name = init_data->constraints.name;
-	ldo->desc.name = ldo->name;
 
 	ic_type = atc260x_get_ic_type(atc260x);
 	BUG_ON(ic_type >= ARRAY_SIZE(sc_ctrl_reg_tbl));
@@ -401,10 +413,8 @@ static int atc260x_switch_ldo_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	ldo->desc.type = REGULATOR_VOLTAGE;
 	ldo->desc.n_voltages = ldo->property.table_len;
 	ldo->desc.ops = &atc260x_switch_ldo_ops;
-	ldo->desc.owner = THIS_MODULE;
 
 	config.dev = &pdev->dev;
 	config.init_data = init_data;

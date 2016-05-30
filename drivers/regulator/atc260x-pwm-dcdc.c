@@ -169,6 +169,7 @@ static int ext_pwm_dcdc_probe(struct platform_device *pdev)
 {
 	struct ext_pwm_dcdc_dev *dcdc;
 	struct regulator_init_data *init_data;
+	struct regulator_desc *rdesc;
 	struct regulator_config config = { };
 	int ret, len;
 	uint __maybe_unused i;
@@ -219,7 +220,13 @@ static int ext_pwm_dcdc_probe(struct platform_device *pdev)
 	}
 #endif
 
-	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
+	dcdc->name = of_get_property(node, "regulator-name", NULL);
+	rdesc = &dcdc->desc;
+	rdesc->name = dcdc->name;
+	rdesc->type = REGULATOR_VOLTAGE;
+	rdesc->owner = THIS_MODULE;
+
+	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node, rdesc);
 	if (!init_data)
 		return -ENOMEM;
 	init_data->constraints.valid_modes_mask = REGULATOR_MODE_NORMAL;
@@ -255,11 +262,8 @@ static int ext_pwm_dcdc_probe(struct platform_device *pdev)
 			 "failed to get init voltage selector, assum 0\n");
 	}
 
-	dcdc->desc.name = dcdc->name;
-	dcdc->desc.type = REGULATOR_VOLTAGE;
 	dcdc->desc.n_voltages = dcdc->table_len;
 	dcdc->desc.ops = &ext_pwm_dcdc_ops;
-	dcdc->desc.owner = THIS_MODULE;
 
 	config.dev = &pdev->dev;
 	config.init_data = init_data;
