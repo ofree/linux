@@ -936,33 +936,55 @@ static ssize_t panel_mode_3d_store(struct device *dev,
 	return count;
 }
 
+static DEVICE_ATTR(name, S_IRUGO, panel_name_show, NULL);
+static DEVICE_ATTR(size, S_IRUGO, panel_size_show, NULL);
+static DEVICE_ATTR(default_mode, S_IRUGO | S_IWUSR, panel_default_mode_show,
+       panel_default_mode_store);
+static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, panel_mode_show, panel_mode_store);
+static DEVICE_ATTR(mode_list, S_IRUGO, panel_mode_list_show, NULL);
+static DEVICE_ATTR(prelines, S_IRUGO, panel_prelines_show, NULL);
+static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR, panel_enable_show,
+       panel_enable_store);
+static DEVICE_ATTR(is_primary, S_IRUGO, panel_is_primary_show, NULL);
+static DEVICE_ATTR(hotplug_always_on, S_IRUGO, panel_hotplug_always_on_show, NULL);
+static DEVICE_ATTR(hpd_enable, S_IRUGO | S_IWUSR, panel_hpd_enable_show,
+       panel_hpd_enable_store);
+static DEVICE_ATTR(connected, S_IRUGO, panel_connected_show, NULL);
+static DEVICE_ATTR(scale_factor, S_IRUGO | S_IWUSR, panel_scale_factor_show,
+       panel_scale_factor_store);
+static DEVICE_ATTR(mode_3d, S_IRUGO | S_IWUSR, panel_mode_3d_show,
+	       panel_mode_3d_store);
+
 /*
  * These are the only attributes are present for all panel.
  */
-static struct device_attribute panel_dev_attrs[] = {
-	__ATTR(name, S_IRUGO, panel_name_show, NULL),
-	__ATTR(size, S_IRUGO, panel_size_show, NULL),
-	__ATTR(default_mode, S_IRUGO | S_IWUSR, panel_default_mode_show,
-	       panel_default_mode_store),
-	__ATTR(mode, S_IRUGO | S_IWUSR, panel_mode_show, panel_mode_store),
-	__ATTR(mode_list, S_IRUGO, panel_mode_list_show, NULL),
-	__ATTR(prelines, S_IRUGO, panel_prelines_show, NULL),
-	__ATTR(enable, S_IRUGO | S_IWUSR, panel_enable_show,
-	       panel_enable_store),
-	__ATTR(is_primary, S_IRUGO, panel_is_primary_show, NULL),
-	__ATTR(hotplug_always_on, S_IRUGO, panel_hotplug_always_on_show, NULL),
-	__ATTR(hpd_enable, S_IRUGO | S_IWUSR, panel_hpd_enable_show,
-	       panel_hpd_enable_store),
-	__ATTR(connected, S_IRUGO, panel_connected_show, NULL),
-	__ATTR(scale_factor, S_IRUGO | S_IWUSR, panel_scale_factor_show,
-	       panel_scale_factor_store),
-	__ATTR(mode_3d, S_IRUGO | S_IWUSR, panel_mode_3d_show,
-	       panel_mode_3d_store),
-	__ATTR_NULL,
+static struct attribute *panel_dev_attrs[] = {
+	&dev_attr_name.attr,
+	&dev_attr_size.attr,
+	&dev_attr_default_mode.attr,
+	&dev_attr_mode.attr,
+	&dev_attr_mode_list.attr,
+	&dev_attr_prelines.attr,
+	&dev_attr_enable.attr,
+	&dev_attr_is_primary.attr,
+	&dev_attr_hotplug_always_on.attr,
+	&dev_attr_hpd_enable.attr,
+	&dev_attr_connected.attr,
+	&dev_attr_scale_factor.attr,
+	&dev_attr_mode_3d.attr,
+	NULL
+};
+
+static struct attribute_group panel_dev_group = {
+	.attrs = panel_dev_attrs,
+};
+
+static const struct attribute_group *panel_dev_groups[] = {
+	&panel_dev_group, 
 };
 
 static struct class owl_panel_class = {
 	.name = "owl_panel",
 	.dev_release = panel_dev_release,
-	.dev_attrs = panel_dev_attrs,
+	.dev_groups = panel_dev_groups,
 };
