@@ -1328,9 +1328,11 @@ static void hdcp_ri_update_handle(struct work_struct *work)
 
 static void hdcp_read_key_handle(struct work_struct *work)
 {
+#if 0
 	if (hdcp_read_key() == -EAGAIN)
 		queue_delayed_work(g_hdcp.wq, &g_hdcp.hdcp_read_key_work,
 				   msecs_to_jiffies(2000));
+#endif
 }
 
 /*===========================================================================
