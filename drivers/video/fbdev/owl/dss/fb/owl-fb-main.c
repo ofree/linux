@@ -15,7 +15,7 @@
  * Change log:
  *	2015/8/28: Created by Lipeng.
  */
-#define DEBUG
+#undef DEBUG
 
 #include <linux/types.h>
 #include <linux/init.h>
