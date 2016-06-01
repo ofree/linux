@@ -36,7 +36,7 @@
 #include <linux/of_platform.h>
 
 #include "core.h"
-
+#define DEBUG_S900_CLK
 #ifdef DEBUG_S700_CLK
 void dwc3_owl_printk_power_usage_count(void);
 void dwc3_owl_printk_clk_reg(void);
@@ -481,6 +481,11 @@ static int dwc3_owl_probe(struct platform_device *pdev)
 #if defined(DEBUG_S700_CLK)  || defined(DEBUG_S900_CLK)
 	if (dwc3_owl_debug_regs_remap(owl))
 		return -ENOMEM;
+
+	dev_dbg(&pdev->dev, "force usb3 avdd on\n");
+
+	writel(readl(owl->regs.sps_pg_ctl) | (0x1 << 8), owl->regs.sps_pg_ctl);
+	writel(readl(owl->regs.sps_ldo_ctl) | (0x1 << 17), owl->regs.sps_ldo_ctl);
 #endif
 
 	//"usb3_480mpll0", "usb3_480mphy0", "usb3_5gphy", "usb3_cce", "usb3_mac";
